@@ -1,9 +1,77 @@
 ﻿@page "/"
+@using QRCoder;
+@inject RoomContext dbContext
+@inject NavigationManager navigationManager
 
-<PageTitle>Index</PageTitle>
+<PageTitle>Sale</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudDataGrid Items="@rooms">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Sale</MudText>
+        <MudSpacer />
+    </ToolBarContent>
+    <Columns>
+        <TemplateColumn>
+            <CellTemplate>
+                <MudButton Href="@GetHrefFromRoomName(context.Item.Name)" Color="Color.Primary" Variant="Variant.Outlined">
+                    Kalendarz
+                </MudButton>
+            </CellTemplate>
+        </TemplateColumn>
+        <PropertyColumn Property="x => GetBuildingFromRoomName(x.Name)" Title="Budynek"/>
+        <PropertyColumn Property="x => GetRoomFromRoomName(x.Name)" Title="Numer sali" />
+        <PropertyColumn Property="x => GetComputersAvailableText(x.ComputersAvailable)" Title="Komputery dostępne" />
+        <PropertyColumn Property="x => x.RoomSupervisor" Title="Nadzorujący" />
+        <TemplateColumn T="Room">
+            <CellTemplate>
+                <MudButton Color="Color.Primary" Variant="Variant.Outlined">
+                    <a href="data:text/;base64, @Convert.ToBase64String(GetQrCode(context.Item.Name))" download="@GetQrCodeFileName(context.Item.Name)">Pobierz QR</a>
+                </MudButton>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+</MudDataGrid>
 
-Welcome to your new app.
+@code {
+    List<Room> rooms { get; set; } = new();
+    QRCodeGenerator qrGenerator = new();
 
-<SurveyPrompt Title="How is Blazor working for you?" />
+    string GetComputersAvailableText(bool value) => value ? "TAK" : "NIE";
+    string GetQrCodeFileName(string name) => name.Replace(" ", "") + ".png";
+    string GetHrefFromRoomName(string name) => navigationManager.BaseUri + "room/" + name;
+    string GetBuildingFromRoomName(string name) => name.Split('_').First();
+    string GetRoomFromRoomName(string name) => name.Split('_').Last();
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if(firstRender)
+        {
+            // dbContext.Add(new Room()
+            // {
+            //     Name = "A1_123",
+            //     ComputersAvailable = false,
+            //     NumberOfSeats = 15,
+            //     Reservations = "",
+            //     RoomSupervisor = "Węglarz"
+            // });
+            // dbContext.Add(new Room()
+            // {
+            //     Name = "A3_4",
+            //     ComputersAvailable = true,
+            //     NumberOfSeats = 300,
+            //     Reservations = "FSDSAFADSFASDF",
+            //     RoomSupervisor = "Brzeziński"
+            // });
+            // dbContext.SaveChanges();
+            rooms = dbContext.Rooms.ToList();
+            StateHasChanged();
+        }
+    }
+
+    byte[] GetQrCode(string data)
+    {
+        using QRCodeData qrCodeData = qrGenerator.CreateQrCode(GetHrefFromRoomName(data), QRCodeGenerator.ECCLevel.Q);
+        using(PngByteQRCode qrCode = new PngByteQRCode(qrCodeData))
+        return qrCode.GetGraphic(20);
+    }
+}

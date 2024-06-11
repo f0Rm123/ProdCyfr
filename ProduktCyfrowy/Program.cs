@@ -1,13 +1,13 @@
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
-using ProduktCyfrowy.Data;
+using MudBlazor.Services;
+using ProduktCyfrowy;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
-builder.Services.AddSingleton<WeatherForecastService>();
+builder.Services.AddDbContext<RoomContext>();
+builder.Services.AddMudServices();
 
 var app = builder.Build();
 

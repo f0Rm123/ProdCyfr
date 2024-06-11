@@ -1,0 +1,26 @@
+﻿@page "/room/{RoomName}"
+@inject NavigationManager navigationManager
+@inject RoomContext dbContext
+
+<PageTitle>@GetTitle()</PageTitle>
+
+<MudButton Href="@navigationManager.BaseUri" Color="Color.Primary" Variant="Variant.Outlined">Powróć</MudButton>
+
+<MudText>@calendarData</MudText>
+
+<MudCalendar></MudCalendar>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string RoomName { get; set; }
+    string GetTitle() => "Sala " + RoomName;
+
+    string calendarData
+    {
+        get
+        {
+            return dbContext.Rooms.First(a => a.Name == RoomName).Reservations;
+        }
+    }
+}
