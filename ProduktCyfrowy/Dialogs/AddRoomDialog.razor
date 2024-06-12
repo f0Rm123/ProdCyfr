@@ -42,9 +42,7 @@
             {
                 Name = building + "_" + roomName,
                 ComputersAvailable = computersAvailable,
-                NumberOfSeats = seatsNumber,
-                Reservations = "",
-                RoomSupervisor = supervisor
+                NumberOfSeats = seatsNumber // Trzeba dodać nową obsługę tego nadzorującego
             });
             dbContext.SaveChanges();
             dialog.Close();
@@ -65,9 +63,7 @@
                 {
                     Name = values[0],
                     ComputersAvailable = Convert.ToBoolean(values[1]),
-                    NumberOfSeats = Convert.ToInt32(values[2]),
-                    Reservations = values[3],
-                    RoomSupervisor = values[4]
+                    NumberOfSeats = Convert.ToInt32(values[2]) // Trzeba dodać nową obsługę tego nadzorującego
                 });
             }
         }
