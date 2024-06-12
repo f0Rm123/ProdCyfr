@@ -1,0 +1,42 @@
+﻿@using ProduktCyfrowy
+
+<MudPaper>
+    <MudDialog>
+        <TitleContent>
+            <MudText Typo="Typo.h6">Logowanie</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudTextField T="string" @bind-Value="@login" Label="Login" Variant="Variant.Outlined" />
+            <MudTextField T="string" @bind-Value="@password" InputType="InputType.Password" Label="Hasło" Variant="Variant.Outlined" />
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Login" Color="Color.Primary" Variant="Variant.Filled">Zaloguj</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudPaper>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance dialog { get; set; }
+    string login, password;
+
+    void Login()
+    {
+        bool success = false;
+        if (!string.IsNullOrEmpty(login) && !string.IsNullOrEmpty(password))
+        {
+            if(login == "admin" && password == "admin")
+            {
+                success = true;
+            }
+        }
+        if(success)
+        {
+            dialog.Close(DialogResult.Ok(true));
+        }
+        else
+        {
+            dialog.Cancel();
+        }
+    }
+}

@@ -1,0 +1,77 @@
+﻿@using ProduktCyfrowy
+@inject RoomContext dbContext
+
+<MudPaper>
+    <MudDialog>
+        <TitleContent>
+            <MudText Typo="Typo.h6">Dodawanie sal</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudFileUpload T="IBrowserFile" FilesChanged="AddManyRooms" MaximumFileCount="1">
+                <ButtonTemplate>
+                    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.CloudUpload" for="@context.Id">
+                        Dodaj wiele sal plikiem .csv
+                    </MudButton>
+                </ButtonTemplate>
+            </MudFileUpload>
+            <MudTextField T="string" @bind-Value="@building" Label="Budynek*" Variant="Variant.Outlined" />
+            <MudTextField T="string" @bind-Value="@roomName" Label="Nazwa sali*" Variant="Variant.Outlined" />
+            <MudTextField T="string" @bind-Value="@supervisor" Label="Nadzorujący*" Variant="Variant.Outlined" />
+            <MudTextField T="int" @bind-Value="@seatsNumber" Label="Dostępne miejsca*" Variant="Variant.Outlined" />
+            <MudCheckBox @bind-Value="@computersAvailable" Label="Dostępne komputery" />
+        </DialogContent>
+        <DialogActions>
+            <MudText Typo="Typo.body2">*wymagane pola</MudText>
+            <MudButton OnClick="AddSingleRoom" Color="Color.Primary" Variant="Variant.Filled">Dodaj</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudPaper>
+
+@code {
+    [CascadingParameter]
+    MudDialogInstance dialog { get; set; }
+    string building, roomName, supervisor;
+    int seatsNumber;
+    bool computersAvailable;
+
+    void AddSingleRoom()
+    {
+        if (!string.IsNullOrEmpty(building) && !string.IsNullOrEmpty(roomName) && !string.IsNullOrEmpty(supervisor) && seatsNumber > 0)
+        {
+            dbContext.Add(new Room()
+            {
+                Name = building + "_" + roomName,
+                ComputersAvailable = computersAvailable,
+                NumberOfSeats = seatsNumber,
+                Reservations = "",
+                RoomSupervisor = supervisor
+            });
+            dbContext.SaveChanges();
+            dialog.Close();
+        }
+    }
+
+    async Task AddManyRooms(IBrowserFile file)
+    {
+        using var stream = file.OpenReadStream();
+        using var reader = new StreamReader(stream);
+        string line;
+        while ((line = await reader.ReadLineAsync()) != null)
+        {
+            if(!string.IsNullOrEmpty(line))
+            {
+                string[] values = line.Split(',');
+                dbContext.Add(new Room()
+                {
+                    Name = values[0],
+                    ComputersAvailable = Convert.ToBoolean(values[1]),
+                    NumberOfSeats = Convert.ToInt32(values[2]),
+                    Reservations = values[3],
+                    RoomSupervisor = values[4]
+                });
+            }
+        }
+        dbContext.SaveChanges();
+        dialog.Close();
+    }
+}

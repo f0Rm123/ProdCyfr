@@ -1,19 +1,35 @@
 ﻿@page "/room/{RoomName}"
+@using ProduktCyfrowy.Dialogs;
 @inject NavigationManager navigationManager
 @inject RoomContext dbContext
+@inject IDialogService dialogService
+@inject Auth auth
 
 <PageTitle>@GetTitle()</PageTitle>
 
-<MudButton Href="@navigationManager.BaseUri" Color="Color.Primary" Variant="Variant.Outlined">Powróć</MudButton>
+@if (!loggedIn)
+{
+    if(!loginDialogVisible)
+    {
+        <MudButton OnClick="ShowLoginDialog" Variant="Variant.Filled" Color="Color.Info">Zaloguj</MudButton>
+    }
+}
+else
+{
+    <MudButton Href="@navigationManager.BaseUri" Color="Color.Primary" Variant="Variant.Outlined">Sale</MudButton>
 
-<MudText>@calendarData</MudText>
+    <MudText>@calendarData</MudText> @* To tylko dla testów, że widać co tam jest *@
 
-<MudCalendar></MudCalendar>
+    <MudCalendar></MudCalendar>
+}
 
 @code {
     [Parameter]
     [EditorRequired]
     public string RoomName { get; set; }
+    bool loggedIn = false;
+    async Task<bool> IsLoggedIn() => await auth.IsLoggedIn();
+    bool loginDialogVisible = false;
     string GetTitle() => "Sala " + RoomName;
 
     string calendarData
@@ -22,5 +38,30 @@
         {
             return dbContext.Rooms.First(a => a.Name == RoomName).Reservations;
         }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            loggedIn = await IsLoggedIn();
+            if (loggedIn)
+            {
+                StateHasChanged();
+            }
+        }
+    }
+
+    async Task ShowLoginDialog()
+    {
+        loginDialogVisible = true;
+        var dialog = await dialogService.ShowAsync<LoginDialog>();
+        var result = await dialog.Result;
+        if (!result.Canceled)
+        {
+            await auth.Login();
+        }
+        loginDialogVisible = false;
+        StateHasChanged();
     }
 }
