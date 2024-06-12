@@ -4,9 +4,11 @@
 
 <PageTitle>@GetTitle()</PageTitle>
 
+
+
 <MudButton Href="@navigationManager.BaseUri" Color="Color.Primary" Variant="Variant.Outlined">Powróć</MudButton>
 
-<MudText>@calendarData</MudText>
+<MudText Style="margin: 15px 0px 15px 0px;font-weight:bold;">@GetRoomDescription()</MudText>
 
 <MudCalendar></MudCalendar>
 
@@ -14,13 +16,20 @@
     [Parameter]
     [EditorRequired]
     public string RoomName { get; set; }
+
     string GetTitle() => "Sala " + RoomName;
+    string GetRoomDescription()
+    {
+        var room = dbContext.Rooms.FirstOrDefault(r => r.Name == RoomName);
+        return room is null ? "" : $"Sala {RoomName}, Liczba miejsc: {room.NumberOfSeats}, Czy są komputery: {(room.ComputersAvailable ? "TAK" : "NIE")}, Nadzorca sali: { room.SupervisorFullName()}";
+    }
 
     string calendarData
     {
         get
         {
-            return dbContext.Rooms.First(a => a.Name == RoomName).Reservations;
+            return "";
+            // return dbContext.Rooms.First(a => a.Name == RoomName).Reservations;
         }
     }
 }

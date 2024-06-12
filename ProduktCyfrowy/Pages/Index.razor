@@ -21,7 +21,7 @@
         <PropertyColumn Property="x => GetBuildingFromRoomName(x.Name)" Title="Budynek"/>
         <PropertyColumn Property="x => GetRoomFromRoomName(x.Name)" Title="Numer sali" />
         <PropertyColumn Property="x => GetComputersAvailableText(x.ComputersAvailable)" Title="Komputery dostępne" />
-        <PropertyColumn Property="x => x.RoomSupervisor" Title="Nadzorujący" />
+        <PropertyColumn Property="x => x.SupervisorFullName()" Title="Nadzorujący" />
         <TemplateColumn T="Room">
             <CellTemplate>
                 <MudButton Color="Color.Primary" Variant="Variant.Outlined">

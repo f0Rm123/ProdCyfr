@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ProduktCyfrowy;
 
@@ -10,16 +11,14 @@ using ProduktCyfrowy;
 namespace ProduktCyfrowy.Migrations
 {
     [DbContext(typeof(RoomContext))]
-    partial class RoomContextModelSnapshot : ModelSnapshot
+    [Migration("20240612052330_remove")]
+    partial class remove
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.20")
-                .HasAnnotation("Proxies:ChangeTracking", false)
-                .HasAnnotation("Proxies:CheckEquality", false)
-                .HasAnnotation("Proxies:LazyLoading", true);
+            modelBuilder.HasAnnotation("ProductVersion", "7.0.20");
 
             modelBuilder.Entity("ProduktCyfrowy.Reservation", b =>
                 {
@@ -79,12 +78,7 @@ namespace ProduktCyfrowy.Migrations
                     b.Property<int>("NumberOfSeats")
                         .HasColumnType("INTEGER");
 
-                    b.Property<Guid?>("SupervisorId")
-                        .HasColumnType("TEXT");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("SupervisorId");
 
                     b.ToTable("Rooms");
                 });
@@ -93,10 +87,6 @@ namespace ProduktCyfrowy.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("FirstName")
@@ -142,15 +132,6 @@ namespace ProduktCyfrowy.Migrations
                     b.Navigation("Room");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("ProduktCyfrowy.Room", b =>
-                {
-                    b.HasOne("ProduktCyfrowy.User", "Supervisor")
-                        .WithMany()
-                        .HasForeignKey("SupervisorId");
-
-                    b.Navigation("Supervisor");
                 });
 
             modelBuilder.Entity("ProduktCyfrowy.User", b =>
