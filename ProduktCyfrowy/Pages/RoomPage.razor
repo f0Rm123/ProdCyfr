@@ -1,9 +1,11 @@
 ﻿@page "/room/{RoomName}"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using ProduktCyfrowy.Dialogs;
 @inject NavigationManager navigationManager
 @inject RoomContext dbContext
 @inject IDialogService dialogService
 @inject Auth auth
+@inject ProtectedSessionStorage protectedSessionStorage
 
 <PageTitle>@GetTitle()</PageTitle>
 
@@ -20,7 +22,7 @@ else
         <MudButton Href="@navigationManager.BaseUri" Color="Color.Primary" Variant="Variant.Outlined">Sale</MudButton>
 
         <div style="float:right;">
-            <MudButton Href="@navigationManager.BaseUri" Color="Color.Success" Variant="Variant.Outlined">Dodaj rezerwację</MudButton>
+            <MudButton OnClick="ShowAddReservationDialog" Variant="Variant.Filled" Color="Color.Primary">Dodaj rezerwację</MudButton>
         </div>
     </div>
 
@@ -28,14 +30,25 @@ else
 
     <MudCalendar Items="_events" item>
         <CellTemplate>
-            <div style="width: 100%; height: 100%; border: 2px solid @GetColor(((CustomItem)context).Color)">
-                <div style="display:flex;flex-direction:row;background-color: @GetColor(((CustomItem)context).Color)">
-                    <MudText Style="color: #ffffff;" Typo="Typo.body1" Align="Align.Center">@(((CustomItem)context).Title)</MudText>
+            <div style="width: 100%; height: 100%; margin: 4px; background-color: @GetColor(((CustomItem)context).Color)">
+                @if (((CustomItem)context).CanDelete)
+                {
+                    <div style="width:100%">
 
-                        @if (((CustomItem)context).CanDelete)
-                    {
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Usuń rezerwację"></MudIconButton>
-                    }
+
+                        <MudIconButton Style="float:right" OnClick="() => RemoveReservation(((CustomItem)context).Id)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Usuń rezerwację"></MudIconButton>
+                </div>
+                }
+                <div style="text-align:center;display:flex;padding:1px;flex-direction:row;width:100%;background-color: @GetColor(((CustomItem)context).Color)">
+                    <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">Rezerwacja: <strong> @(((CustomItem)context).Title)</strong></MudText>
+                
+                    
+                </div>
+
+                <div style="text-align:center;display:flex;padding:1px;width:100%;flex-direction:row;background-color: @GetColor(((CustomItem)context).Color)">
+                    <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">godz: @(((CustomItem)context).ReservationTime)</MudText>
+
+                    
                 </div>
 
             </div>
@@ -59,35 +72,79 @@ else
 
     private string GetColor(Color color) => $"var(--mud-palette-{color.ToDescriptionString()})";
 
-    private List<CustomItem> _events = new()
+    private List<CustomItem> _events = new List<CustomItem>();
+
+
+    async Task GetCalendarData()
     {
-        new CustomItem
-        {
-            Start = DateTime.Today.AddHours(10),
-            End = DateTime.Today.AddHours(11),
-            Title = "Rezerwacja : dOminik DDDDDDD",
-            Location = "Over here",
-            Text = "This is an event today",
-            Color = Color.Info,
-        },
-        new CustomItem
-        {
-            Start = DateTime.Today.AddDays(2).AddHours(11),
-            End = DateTime.Today.AddDays(2).AddHours(12.5),
-            Title = "Rezerwacja : dOminik DDDDDDD",
-            Location = "Over there",
-            Text = "This is an event tomorrow",
-            Color = Color.Success,
-            CanDelete =true
-        }
-    };
+        var room = dbContext.Rooms.FirstOrDefault(r => r.Name == RoomName);
+        var userId = (await protectedSessionStorage.GetAsync<Guid>("userId")).Value;
+        _events = await GetEvents();
+    }
+
+    async Task<List<CustomItem >> GetEvents() {
+        var room = dbContext.Rooms.FirstOrDefault(r => r.Name == RoomName);
+        var userId = (await protectedSessionStorage.GetAsync<Guid>("userId")).Value;
+        var isAdmin = (await protectedSessionStorage.GetAsync<bool>("isAdmin")).Value;
+        return dbContext.Reservations.Where(r => r.RoomId == room.Id).Select(s => new CustomItem()
+    {
+        Id = s.Id,
+        Start = s.DateFrom,
+            End = s.DateTo,
+            Title = s.User.FirstName + " " + s.User.LastName,
+            Color = s.UserId == userId ? Color.Success : Color.Info,
+                ReservationTime = s.DateFrom.ToString("HH:mm") + " - " + s.DateTo.ToString("HH:mm"),
+                CanDelete = s.UserId == userId || isAdmin
+        }).ToList();
+    }
+    // new()
+    // {
+    //     new CustomItem
+    //     {
+    //         Start = DateTime.Today.AddHours(10),
+    //         End = DateTime.Today.AddHours(11),
+    //         Title = "Rezerwacja : dOminik DDDDDDD",
+    //         Location = "Over here",
+    //         Text = "This is an event today",
+    //         Color = Color.Info,
+    //     },
+    //     new CustomItem
+    //     {
+    //         Start = DateTime.Today.AddDays(2).AddHours(11),
+    //         End = DateTime.Today.AddDays(2).AddHours(12.5),
+    //         Title = "Rezerwacja : dOminik DDDDDDD",
+    //         Location = "Over there",
+    //         Text = "This is an event tomorrow",
+    //         Color = Color.Success,
+    //         CanDelete =true
+    //     }
+    // };
 
     private class CustomItem : CalendarItem
     {
+        public Guid Id{ get; set; }
         public string Title { get; set; } = string.Empty;
         public string Location { get; set; } = string.Empty;
         public Color Color { get; set; } = Color.Primary;
         public bool CanDelete { get; set; } = false;
+        public string ReservationTime { get; set; } = "";
+    }
+
+    async Task ShowAddReservationDialog()
+    {
+        var dialog = await dialogService.ShowAsync<AddReservationDialog>();
+        var room = dbContext.Rooms.FirstOrDefault(r => r.Name == RoomName);
+        ((AddReservationDialog)dialog.Dialog).RoomId = room.Id;
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+            UpdatePage();
+    }
+
+    async Task UpdatePage()
+    {
+        // rooms = dbContext.Rooms.ToList();
+        await GetCalendarData();
+        StateHasChanged();
     }
 
     string calendarData
@@ -106,21 +163,44 @@ else
             loggedIn = await IsLoggedIn();
             if (loggedIn)
             {
+                await UpdatePage();
                 StateHasChanged();
             }
+
         }
     }
 
     async Task ShowLoginDialog()
     {
+        var aa = dbContext.Users.ToList();
         loginDialogVisible = true;
         var dialog = await dialogService.ShowAsync<LoginDialog>();
         var result = await dialog.Result;
         if (!result.Canceled)
         {
-            await auth.Login();
+            var userId = ((LoginDialog)dialog.Dialog).UserId;
+            var isAdmin = ((LoginDialog)dialog.Dialog).IsAdmin;
+            await auth.Login(userId, isAdmin);
         }
         loginDialogVisible = false;
         StateHasChanged();
     }
+
+
+    async Task RemoveReservation(Guid id)
+    {
+        var parameters = new DialogParameters<SimpleAcceptDialog>();
+        parameters.Add("ContentText", "Czy na pewno chcesz usunąć daną rezerwację?");
+        parameters.Add("AcceptText", "Tak, usuń");
+        parameters.Add("CancelText", "Nie, zachowaj");
+        var dialog = await dialogService.ShowAsync<SimpleAcceptDialog>("Usuwanie rezerwacji", parameters);
+        var result = await dialog.Result;
+        if (!result.Cancelled)
+        {
+            dbContext.Reservations.Remove(dbContext.Reservations.Where(a => a.Id == id).First());
+            await dbContext.SaveChangesAsync();
+            UpdatePage();
+        }
+    }
+
 }

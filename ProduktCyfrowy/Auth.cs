@@ -12,9 +12,11 @@ public class Auth
         navManager = _navManager;
     }
 
-    public async Task Login()
+    public async Task Login(Guid userId,bool isAdmin)
     {
         await protectedSessionStorage.SetAsync("loggedin", "true");
+        await protectedSessionStorage.SetAsync("userId", userId);
+        await protectedSessionStorage.SetAsync("isAdmin", isAdmin);
         navManager.NavigateTo(navManager.Uri, true);
     }
 

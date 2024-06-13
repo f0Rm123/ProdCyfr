@@ -1,4 +1,5 @@
-﻿@using ProduktCyfrowy
+﻿@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using ProduktCyfrowy
 @inject RoomContext dbContext
 
 <MudPaper>
@@ -16,7 +17,14 @@
             </MudFileUpload>
             <MudTextField T="string" @bind-Value="@building" Label="Budynek*" Variant="Variant.Outlined" />
             <MudTextField T="string" @bind-Value="@roomName" Label="Nazwa sali*" Variant="Variant.Outlined" />
-            <MudTextField T="string" @bind-Value="@supervisor" Label="Nadzorujący*" Variant="Variant.Outlined" />
+            <MudSelect T="User" Label="Nadzorujący" Variant="Variant.Outlined" @ref="mudUserField">
+
+               @foreach (var item in dbContext.Users)
+                {
+                    <MudSelectItem Value="@(item)">@(item.FirstName + " " + item.LastName)</MudSelectItem>
+                }
+
+           </MudSelect>
             <MudTextField T="int" @bind-Value="@seatsNumber" Label="Dostępne miejsca*" Variant="Variant.Outlined" />
             <MudCheckBox @bind-Value="@computersAvailable" Label="Dostępne komputery" />
         </DialogContent>
@@ -33,16 +41,18 @@
     string building, roomName, supervisor;
     int seatsNumber;
     bool computersAvailable;
+    MudSelect<User> mudUserField;
 
     void AddSingleRoom()
     {
-        if (!string.IsNullOrEmpty(building) && !string.IsNullOrEmpty(roomName) && !string.IsNullOrEmpty(supervisor) && seatsNumber > 0)
+        if (!string.IsNullOrEmpty(building) && !string.IsNullOrEmpty(roomName) && seatsNumber > 0 && mudUserField.SelectedValues.Any())
         {
             dbContext.Add(new Room()
             {
                 Name = building + "_" + roomName,
                 ComputersAvailable = computersAvailable,
-                NumberOfSeats = seatsNumber // Trzeba dodać nową obsługę tego nadzorującego
+                NumberOfSeats = seatsNumber, // Trzeba dodać nową obsługę tego nadzorującego,
+                SupervisorId = mudUserField.SelectedValues.FirstOrDefault().Id
             });
             dbContext.SaveChanges();
             dialog.Close();

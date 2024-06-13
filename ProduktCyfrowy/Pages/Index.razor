@@ -1,10 +1,12 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
 @using ProduktCyfrowy.Dialogs;
 @using QRCoder;
 @inject RoomContext dbContext
 @inject NavigationManager navigationManager
 @inject IDialogService dialogService
 @inject Auth auth
+@inject ProtectedSessionStorage protectedSessionStorage
 
 <PageTitle>Sale</PageTitle>
 
@@ -17,10 +19,13 @@
 }
 else
 {
-    <MudButton OnClick="ShowAddRoomDialog" StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary">
+    @if (isAdmin)
+    {
+
+        <MudButton OnClick="ShowAddRoomDialog" StartIcon="@Icons.Material.Filled.Add" Style="margin-bottom:10px;" Variant="Variant.Filled" Color="Color.Primary">
         Dodaj sale
     </MudButton>
-
+    }
     <MudDataGrid Items="@rooms">
         <ToolBarContent>
             <MudText Typo="Typo.h6">Sale</MudText>
@@ -46,6 +51,9 @@ else
                     </MudButton>
                 </CellTemplate>
             </TemplateColumn>
+            @if (isAdmin)
+        {
+            
             <TemplateColumn T="Room">
                 <CellTemplate>
                     <MudButton Color="Color.Error" Variant="Variant.Filled" OnClick="() => RemoveRoom(context.Item.Id)">
@@ -53,6 +61,7 @@ else
                     </MudButton>
                 </CellTemplate>
             </TemplateColumn>
+            }
         </Columns>
     </MudDataGrid>
 }
@@ -63,7 +72,7 @@ else
 
     bool loggedIn = false;
     async Task<bool> IsLoggedIn() => await auth.IsLoggedIn();
-
+    bool isAdmin = false;
     bool loginDialogVisible = false;
     string GetComputersAvailableText(bool value) => value ? "TAK" : "NIE";
     string GetQrCodeFileName(string name) => name.Replace(" ", "") + ".png";
@@ -84,6 +93,8 @@ else
             loggedIn = await IsLoggedIn();
             if(loggedIn)
             {
+                isAdmin = (await protectedSessionStorage.GetAsync<bool>("isAdmin")).Value;
+
                 UpdatePage();
             }
         }
@@ -96,7 +107,9 @@ else
         var result = await dialog.Result;
         if(!result.Canceled)
         {
-            await auth.Login();
+            var userId = ((LoginDialog)dialog.Dialog).UserId;
+            var isAdmin = ((LoginDialog)dialog.Dialog).IsAdmin;
+            await auth.Login(userId,isAdmin);
         }
         loginDialogVisible = false;
         UpdatePage();
@@ -126,6 +139,7 @@ else
         var result = await dialog.Result;
         if (!result.Cancelled)
         {
+            dbContext.Reservations.RemoveRange(dbContext.Reservations.Where(r => r.RoomId == id));
             dbContext.Rooms.Remove(dbContext.Rooms.Where(a => a.Id == id).First());
             await dbContext.SaveChangesAsync();
             UpdatePage();

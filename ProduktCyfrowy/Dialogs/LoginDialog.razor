@@ -1,4 +1,5 @@
 ﻿@using ProduktCyfrowy
+@inject RoomContext dbContext
 
 <MudPaper>
     <MudDialog>
@@ -19,14 +20,20 @@
     [CascadingParameter]
     MudDialogInstance dialog { get; set; }
     string login, password;
-
+    public Guid UserId;
+    public bool IsAdmin;
     void Login()
     {
         bool success = false;
         if (!string.IsNullOrEmpty(login) && !string.IsNullOrEmpty(password))
         {
-            if(login == "admin" && password == "admin")
+            var user = dbContext.Users.FirstOrDefault(u => u.Email.ToLower() == login.ToLower() && u.Password == password);
+
+
+            if (user is not null)
             {
+                UserId = user.Id;
+                IsAdmin = user.Role.Name == "Admin";
                 success = true;
             }
         }
