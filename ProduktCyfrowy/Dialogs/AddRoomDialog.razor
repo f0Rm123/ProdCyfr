@@ -64,17 +64,45 @@
         using var stream = file.OpenReadStream();
         using var reader = new StreamReader(stream);
         string line;
+        int lines =0;
+        int linesCorrect = 0;
         while ((line = await reader.ReadLineAsync()) != null)
         {
-            if(!string.IsNullOrEmpty(line))
+            lines++;
+            try
             {
-                string[] values = line.Split(',');
-                dbContext.Add(new Room()
+                if(!string.IsNullOrEmpty(line))
                 {
-                    Name = values[0],
-                    ComputersAvailable = Convert.ToBoolean(values[1]),
-                    NumberOfSeats = Convert.ToInt32(values[2]) // Trzeba dodać nową obsługę tego nadzorującego
-                });
+                    string[] values = line.Split(new string []{",",";"},StringSplitOptions.None);
+                    if (string.IsNullOrEmpty(values[0]) || string.IsNullOrEmpty(values[1]) || string.IsNullOrEmpty(values[2]))
+                        continue;
+
+                    if (dbContext.Rooms.Any(r => r.Name.ToLower().Trim() == values[0].ToLower().Trim()))
+                        continue;
+
+                    var room = new Room()
+                        {
+                            Name = values[0],
+
+                            ComputersAvailable = Convert.ToBoolean(values[1]),
+                            NumberOfSeats = Convert.ToInt32(values[2]),
+                            // Trzeba dodać nową obsługę tego nadzorującego
+                        };
+                    if (!string.IsNullOrEmpty(values[3]))
+                    {
+                        var usr = dbContext.Users.FirstOrDefault(u => u.Email.ToLower().Trim() == values[3].ToLower().Trim());
+                        if (usr is not null)
+                            room.SupervisorId = usr.Id;
+                    }
+
+                    dbContext.Add(room);
+                    linesCorrect++;
+                }
+            }
+            catch (Exception)
+            {
+
+                throw;
             }
         }
         dbContext.SaveChanges();
