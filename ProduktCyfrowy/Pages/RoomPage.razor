@@ -6,6 +6,7 @@
 @inject IDialogService dialogService
 @inject Auth auth
 @inject ProtectedSessionStorage protectedSessionStorage
+@inject IJSRuntime JsRuntime
 
 <PageTitle>@GetTitle()</PageTitle>
 
@@ -27,33 +28,63 @@ else
     </div>
 
     <MudText Style="margin: 15px 0px 15px 0px;font-weight:bold;">@GetRoomDescription()</MudText>
+    <div class="calendar-desktop">
+        <MudCalendar Class="calendar-desktop" Items="_events" item>
+            <CellTemplate>
+                <div style="width: 100%; height: 100%; margin: 4px; background-color: @GetColor(((CustomItem)context).Color)">
+                    @if (((CustomItem)context).CanDelete)
+                    {
+                        <div style="width:100%">
 
-    <MudCalendar Items="_events" item>
-        <CellTemplate>
-            <div style="width: 100%; height: 100%; margin: 4px; background-color: @GetColor(((CustomItem)context).Color)">
-                @if (((CustomItem)context).CanDelete)
-                {
-                    <div style="width:100%">
+
+                            <MudIconButton Style="float:right" OnClick="() => RemoveReservation(((CustomItem)context).Id)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Usuń rezerwację"></MudIconButton>
+                        </div>
+                    }
+                    <div style="text-align:center;display:flex;padding:1px;flex-direction:row;width:100%;background-color: @GetColor(((CustomItem)context).Color)">
+                        <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">Rezerwacja: <strong> @(((CustomItem)context).Title)</strong></MudText>
 
 
-                        <MudIconButton Style="float:right" OnClick="() => RemoveReservation(((CustomItem)context).Id)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Usuń rezerwację"></MudIconButton>
+                    </div>
+
+                    <div style="text-align:center;display:flex;padding:1px;width:100%;flex-direction:row;background-color: @GetColor(((CustomItem)context).Color)">
+                        <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">godz: @(((CustomItem)context).ReservationTime)</MudText>
+
+
+                    </div>
+
                 </div>
-                }
-                <div style="text-align:center;display:flex;padding:1px;flex-direction:row;width:100%;background-color: @GetColor(((CustomItem)context).Color)">
-                    <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">Rezerwacja: <strong> @(((CustomItem)context).Title)</strong></MudText>
-                
-                    
+            </CellTemplate>
+        </MudCalendar>
+    </div>
+    <div class="calendar-mobile">
+        <MudCalendar View=CalendarView.Day ShowWeek="false" ShowMonth="false" Items="_events" item>
+            <CellTemplate>
+                <div style="width: 100%; height: 100%; margin: 4px; background-color: @GetColor(((CustomItem)context).Color)">
+                    @if (((CustomItem)context).CanDelete)
+                    {
+                        <div style="width:100%">
+
+
+                            <MudIconButton Style="float:right" OnClick="() => RemoveReservation(((CustomItem)context).Id)" Icon="@Icons.Material.Filled.Delete" Color="Color.Error" aria-label="Usuń rezerwację"></MudIconButton>
+                        </div>
+                    }
+                    <div style="text-align:center;display:flex;padding:1px;flex-direction:row;width:100%;background-color: @GetColor(((CustomItem)context).Color)">
+                        <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">Rezerwacja: <strong> @(((CustomItem)context).Title)</strong></MudText>
+
+
+                    </div>
+
+                    <div style="text-align:center;display:flex;padding:1px;width:100%;flex-direction:row;background-color: @GetColor(((CustomItem)context).Color)">
+                        <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">godz: @(((CustomItem)context).ReservationTime)</MudText>
+
+
+                    </div>
+
                 </div>
-
-                <div style="text-align:center;display:flex;padding:1px;width:100%;flex-direction:row;background-color: @GetColor(((CustomItem)context).Color)">
-                    <MudText Style="color: #ffffff;width:100%" Typo="Typo.body1" Align="Align.Center">godz: @(((CustomItem)context).ReservationTime)</MudText>
-
-                    
-                </div>
-
-            </div>
-        </CellTemplate>
-    </MudCalendar>
+            </CellTemplate>
+        </MudCalendar>  
+    </div>
+    
 }
 
 @code {
@@ -64,16 +95,15 @@ else
     async Task<bool> IsLoggedIn() => await auth.IsLoggedIn();
     bool loginDialogVisible = false;
     string GetTitle() => "Sala " + RoomName;
-    string GetRoomDescription()
+    RenderFragment GetRoomDescription()
     {
         var room = dbContext.Rooms.FirstOrDefault(r => r.Name == RoomName);
-        return room is null ? "" : $"Sala {RoomName}, Liczba miejsc: {room.NumberOfSeats}, Czy są komputery: {(room.ComputersAvailable ? "TAK" : "NIE")}, Nadzorca sali: {room.SupervisorFullName()}";
+        return room is null ? @<br> : @<div>Sala @RoomName, <br class="mobile-break" />Liczba miejsc: @room.NumberOfSeats, <br class="mobile-break" />Czy są komputery: @(room.ComputersAvailable ? "TAK" : "NIE"), <br class="mobile-break" />Nadzorca sali: @room.SupervisorFullName()</div>;
     }
-
+    
     private string GetColor(Color color) => $"var(--mud-palette-{color.ToDescriptionString()})";
 
     private List<CustomItem> _events = new List<CustomItem>();
-
 
     async Task GetCalendarData()
     {

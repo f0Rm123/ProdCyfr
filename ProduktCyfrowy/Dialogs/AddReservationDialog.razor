@@ -10,12 +10,12 @@
         </TitleContent>
         <DialogContent>
             <div style="display:flex;flex-direction:row;gap:10px;">
-                <MudDatePicker  @ref="@dateField" Label="Data od*"></MudDatePicker>
+                <MudDatePicker  @ref="@dateField" Label="Data*"></MudDatePicker>
             </div>
 
-            <div style="display:flex;flex-direction:row;gap:10px;">
+            <div class="time-picker" style="display:flex;gap:10px;">
                 <MudTimePicker @ref="@timeFromField" Label="Godzina od*"></MudTimePicker>
-                <MudTimePicker @ref="@timeToField" Label="Godzina od*"></MudTimePicker>
+                <MudTimePicker @ref="@timeToField" Label="Godzina do*"></MudTimePicker>
             </div>
 
 

@@ -63,6 +63,30 @@ a, .btn-link {
     color: white;
 }
 
-    .blazor-error-boundary::after {
-        content: "An error has occurred."
+.blazor-error-boundary::after {
+    content: "An error has occurred."
+}
+
+.time-picker {
+    flex-direction: column;
+}
+
+@media only screen and (min-width: 800px) {
+    .mobile-break {
+        display: none;
     }
+
+    .time-picker {
+        flex-direction: row;
+    }
+
+    .calendar-mobile {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 800px) {
+    .calendar-desktop {
+        display: none;
+    }
+}
